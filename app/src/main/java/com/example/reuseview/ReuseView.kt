@@ -8,6 +8,12 @@ import androidx.core.view.children
 
 class ReuseView : ViewGroup {
 
+    companion object {
+
+        private val GAP_BETWEEN_CHILDREN = 30
+
+    }
+
     private var mAdapter: Adapter<*>? = null
 
     private var childViewRetainers = arrayListOf<ViewRetainer>()
@@ -55,11 +61,17 @@ class ReuseView : ViewGroup {
             return
         }
 
+        var totalChildHeight = 0
+
         children.forEach {
             measureChild(it, widthMeasureSpec, heightMeasureSpec)
         }
 
-        setMeasuredDimension(widthMeasureSpec, heightMeasureSpec)
+        children.forEach {
+            totalChildHeight += it.measuredHeight + GAP_BETWEEN_CHILDREN
+        }
+
+        setMeasuredDimension(widthMeasureSpec, totalChildHeight)
     }
 
     override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
@@ -73,7 +85,7 @@ class ReuseView : ViewGroup {
                 child.measuredWidth,
                 startTop + child.measuredHeight
             )
-            startTop += child.measuredHeight + 30
+            startTop += child.measuredHeight + GAP_BETWEEN_CHILDREN
         }
 
     }

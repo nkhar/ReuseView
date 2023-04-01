@@ -16,7 +16,8 @@ class MainActivity : AppCompatActivity() {
         "Departed",
         "Good Will Hunting",
         "The Lord of the Rings: Fellowship of the Ring",
-        "Dance with the Wolves"
+        "Dance with the Wolves",
+        "12 Angry Men"
     )
 
     private lateinit var binding: ActivityMainBinding
