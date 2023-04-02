@@ -32,6 +32,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initViews() {
+
+        binding.tvScrollDown.setOnClickListener {
+            binding.rvMovies.scrollBy(10)
+        }
+
+        binding.tvScrollUp.setOnClickListener {
+            binding.rvMovies.scrollBy(-10)
+        }
+
+
         moviesAdapter = object : ReuseView.Adapter<MovieViewRetainer>() {
             override fun onCreateViewRetainer(parent: ViewGroup): MovieViewRetainer {
                 val view =

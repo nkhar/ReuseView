@@ -4,9 +4,10 @@ import android.content.Context
 import android.util.AttributeSet
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.ScrollingView
 import androidx.core.view.children
 
-class ReuseView : ViewGroup {
+class ReuseView : ViewGroup { //ScrollingView {
 
     companion object {
 
@@ -89,6 +90,34 @@ class ReuseView : ViewGroup {
         }
 
     }
+
+
+    fun scrollBy(y: Int) {
+        scrollBy(0, y)
+    }
+//    override fun computeHorizontalScrollOffset(): Int {
+//        return 10
+//    }
+//
+//    override fun computeHorizontalScrollExtent(): Int {
+//        return 10
+//    }
+//
+//    override fun computeHorizontalScrollRange(): Int {
+//        return 10
+//    }
+//
+//    override fun computeVerticalScrollOffset(): Int {
+//        return 10
+//    }
+//
+//    override fun computeVerticalScrollExtent(): Int {
+//        return 10
+//    }
+//
+//    override fun computeVerticalScrollRange(): Int {
+//        return 10
+//    }
 
     abstract class Adapter<VR : ViewRetainer> {
 
