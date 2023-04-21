@@ -28,6 +28,11 @@ class ReuseView : ViewGroup { //ScrollingView {
 
     private var childViewRetainers = arrayListOf<ViewRetainer>()
 
+    private var mWidthMode = -1
+    private var mHeightMode = -1
+    private var mWidth = -1
+    private var mHeight = -1
+
 
     constructor(context: Context) : this(context, null)
 
@@ -41,29 +46,29 @@ class ReuseView : ViewGroup { //ScrollingView {
     fun setAdapter(adapter: Adapter<*>) {
         mAdapter = adapter
 
-        childViewRetainers.clear()
+//        childViewRetainers.clear()
 
 
-        if ((mAdapter?.getItemCount() ?: 0) == 0) {
-            return
-        }
+//        if ((mAdapter?.getItemCount() ?: 0) == 0) {
+//            return
+//        }
 
-        val tempChildrenCount = mAdapter?.getItemCount() ?: 0
+//        val tempChildrenCount = mAdapter?.getItemCount() ?: 0
 
-        for (i in 0 until tempChildrenCount) {
+//        for (i in 0 until tempChildrenCount) {
 //            val tempViewRetainer = mAdapter?.onCreateViewRetainer(this)
 //            val tempViewRetainer = mAdapter?.createViewRetainer(this)
 
 //            childViewRetainers.add(tempViewRetainer!!)
-        }
+//        }
 
-        for ((index, viewRetainer) in childViewRetainers.withIndex()) {
-            mAdapter?.onBindViewRetainer(viewRetainer, index)
-        }
+//        for ((index, viewRetainer) in childViewRetainers.withIndex()) {
+//            mAdapter?.onBindViewRetainer(viewRetainer, index)
+//        }
 
-        for (viewRetainer in childViewRetainers) {
-            addView(viewRetainer.itemView)
-        }
+//        for (viewRetainer in childViewRetainers) {
+//            addView(viewRetainer.itemView)
+//        }
 
 //        requestLayout()
 
@@ -76,15 +81,17 @@ class ReuseView : ViewGroup { //ScrollingView {
             return
         }
 
-        var totalChildHeight = 0
+        setMeasureSpecs(widthMeasureSpec, heightMeasureSpec)
 
-        children.forEach {
-            measureChild(it, widthMeasureSpec, heightMeasureSpec)
-        }
+//        var totalChildHeight = 0
 
-        children.forEach {
-            totalChildHeight += it.measuredHeight + GAP_BETWEEN_CHILDREN
-        }
+//        children.forEach {
+//            measureChild(it, widthMeasureSpec, heightMeasureSpec)
+//        }
+
+//        children.forEach {
+//            totalChildHeight += it.measuredHeight + GAP_BETWEEN_CHILDREN
+//        }
 
         setMeasuredDimension(widthMeasureSpec, 400)
     }
@@ -185,10 +192,60 @@ class ReuseView : ViewGroup { //ScrollingView {
 //        return 10
 //    }
 
-    fun next(recycler: ReuseView.Recycler, position: Int): View {
-        val view = recycler.getViewForPosition(position)
 
-        return view
+    fun fill(recycler: ReuseView.Recycler, layoutState: ReuseView.LayoutState, position: Int) {
+
+    }
+
+    fun layoutChunk(recycler: ReuseView.Recycler, layoutState: ReuseView.LayoutState, position: Int) {
+        val view: View = layoutState.next(recycler, position)
+
+        addView(view)
+
+//        measureChildWithMargins(view, 0, 0)
+        view.measure(mWidth, mHeight)
+
+        var left: Int
+        var top: Int
+        var right: Int
+        var bottom: Int
+
+        left = paddingLeft
+        right = left + view.measuredWidth
+
+        bottom = layoutState.mOffset
+        top = layoutState.mOffset - view.measuredHeight
+
+        view.layout(left, top, right, bottom)
+
+    }
+
+    fun setMeasureSpecs(wSpec: Int, hSpec: Int) {
+        mWidth = MeasureSpec.getSize(wSpec)
+        mWidthMode = MeasureSpec.getMode(wSpec)
+
+        mHeight = MeasureSpec.getSize(hSpec)
+        mHeightMode = MeasureSpec.getMode(hSpec)
+    }
+
+    inner class LayoutState {
+
+        /**
+         *  Pixel offset where layout should start
+         */
+        var mOffset: Int = 0
+
+        /**
+         * Number of pixels that we should fill, in the layout direction.
+         */
+        var mAvailable: Int = 0
+
+        fun next(recycler: ReuseView.Recycler, position: Int): View {
+            val view = recycler.getViewForPosition(position)
+
+            return view
+        }
+
     }
 
     inner class Recycler {
