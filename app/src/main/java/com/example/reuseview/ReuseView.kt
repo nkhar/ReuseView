@@ -20,6 +20,8 @@ class ReuseView : ViewGroup { //ScrollingView {
 
         private val GAP_BETWEEN_CHILDREN = 30
 
+        const val FOREVER_NS = Long.MAX_VALUE
+
     }
 
     private var mAdapter: Adapter<*>? = null
@@ -49,8 +51,10 @@ class ReuseView : ViewGroup { //ScrollingView {
         val tempChildrenCount = mAdapter?.getItemCount() ?: 0
 
         for (i in 0 until tempChildrenCount) {
-            val tempViewRetainer = mAdapter?.onCreateViewRetainer(this)
-            childViewRetainers.add(tempViewRetainer!!)
+//            val tempViewRetainer = mAdapter?.onCreateViewRetainer(this)
+//            val tempViewRetainer = mAdapter?.createViewRetainer(this)
+
+//            childViewRetainers.add(tempViewRetainer!!)
         }
 
         for ((index, viewRetainer) in childViewRetainers.withIndex()) {
@@ -180,6 +184,38 @@ class ReuseView : ViewGroup { //ScrollingView {
 //    override fun computeVerticalScrollRange(): Int {
 //        return 10
 //    }
+
+    fun next(recycler: ReuseView.Recycler, position: Int): View {
+        val view = recycler.getViewForPosition(position)
+
+        return view
+    }
+
+    inner class Recycler {
+        fun getViewForPosition(position: Int): View {
+            return getViewForPosition(position, true)
+        }
+
+        fun getViewForPosition(position: Int, dryRun: Boolean): View {
+            return tryGetViewRetainerForPositionByDeadline(position, dryRun, FOREVER_NS).itemView
+        }
+
+        fun tryGetViewRetainerForPositionByDeadline(
+            position: Int,
+            dryRun: Boolean,
+            deadlineNs: Long
+        ): ViewRetainer {
+            var retainer: ViewRetainer? = null
+
+            if (retainer == null) {
+                retainer = mAdapter?.createViewRetainer(this@ReuseView)
+            }
+
+
+
+            return retainer!!
+        }
+    }
 
     abstract class Adapter<VR : ViewRetainer> {
 
