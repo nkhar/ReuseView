@@ -1,6 +1,7 @@
 package com.example.reuseview
 
 import android.content.Context
+import android.os.Trace
 import android.util.AttributeSet
 import android.util.Log
 import android.view.MotionEvent
@@ -185,6 +186,23 @@ class ReuseView : ViewGroup { //ScrollingView {
         abstract fun onCreateViewRetainer(parent: ViewGroup): VR
 
         abstract fun <VR> onBindViewRetainer(viewRetainer: VR, position: Int)
+
+        fun createViewRetainer(parent: ViewGroup): VR {
+            Trace.beginSection("Create View Retainer")
+            val retainer: VR = onCreateViewRetainer(parent)
+            try {
+                if (retainer.itemView.parent != null) {
+                    throw IllegalStateException(
+                        "ViewRetainer views must not be attached when created." +
+                                " Ensure that you are not passing 'true' to the attachToRoot parameter" +
+                                "of LayoutInflater.inflate(..., boolean attachToRoot)"
+                    )
+                }
+                return retainer
+            } finally {
+                Trace.endSection()
+            }
+        }
 
         abstract fun getItemCount(): Int
 
