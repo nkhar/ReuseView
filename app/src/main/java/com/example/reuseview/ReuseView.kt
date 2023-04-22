@@ -96,6 +96,10 @@ class ReuseView : ViewGroup { //ScrollingView {
 //            totalChildHeight += it.measuredHeight + GAP_BETWEEN_CHILDREN
 //        }
 
+        for (i in 0 until (mAdapter?.getItemCount() ?: 0)) {
+            layoutChunk(mRecycler, mLayoutState, i)
+        }
+
         setMeasuredDimension(widthMeasureSpec, 400)
 
 //        layoutChunk(mRecycler, mLayoutState, 0)
@@ -104,9 +108,9 @@ class ReuseView : ViewGroup { //ScrollingView {
 
     override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
 
-        for (i in 0 until (mAdapter?.getItemCount() ?: 0)) {
-            layoutChunk(mRecycler, mLayoutState, i)
-        }
+//        for (i in 0 until (mAdapter?.getItemCount() ?: 0)) {
+//            layoutChunk(mRecycler, mLayoutState, i)
+//        }
 
     }
 
