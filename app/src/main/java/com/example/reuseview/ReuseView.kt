@@ -32,6 +32,8 @@ class ReuseView : ViewGroup { //ScrollingView {
     private var mHeightMode = -1
     private var mWidth = -1
     private var mHeight = -1
+    private var mWidthSpec = -1
+    private var mHeightSpec = -1
 
 
     constructor(context: Context) : this(context, null)
@@ -40,6 +42,7 @@ class ReuseView : ViewGroup { //ScrollingView {
         val vc = ViewConfiguration.get(context)
 
         mTouchSlop = vc.scaledTouchSlop
+        Log.d(TAG, "touch slop: $mTouchSlop")
     }
 
 
@@ -94,20 +97,15 @@ class ReuseView : ViewGroup { //ScrollingView {
 //        }
 
         setMeasuredDimension(widthMeasureSpec, 400)
+
+//        layoutChunk(mRecycler, mLayoutState, 0)
+
     }
 
     override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
 
-        var startTop = 0
-
-        children.forEachIndexed { index, child ->
-            child.layout(
-                0,
-                startTop,
-                child.measuredWidth,
-                startTop + child.measuredHeight
-            )
-            startTop += child.measuredHeight + GAP_BETWEEN_CHILDREN
+        for (i in 0 until (mAdapter?.getItemCount() ?: 0)) {
+            layoutChunk(mRecycler, mLayoutState, i)
         }
 
     }
@@ -203,7 +201,10 @@ class ReuseView : ViewGroup { //ScrollingView {
         addView(view)
 
 //        measureChildWithMargins(view, 0, 0)
-        view.measure(mWidth, mHeight)
+//        view.measure(mWidth, mHeight)
+        view.measure(mWidthSpec, mHeightSpec)
+
+        layoutState.mOffset += view.measuredHeight
 
         var left: Int
         var top: Int
@@ -216,11 +217,16 @@ class ReuseView : ViewGroup { //ScrollingView {
         bottom = layoutState.mOffset
         top = layoutState.mOffset - view.measuredHeight
 
+        Log.d(TAG, "layoutChunk: $left $top $right $bottom")
+
         view.layout(left, top, right, bottom)
 
     }
 
     fun setMeasureSpecs(wSpec: Int, hSpec: Int) {
+        mWidthSpec = wSpec
+        mHeightSpec = hSpec
+
         mWidth = MeasureSpec.getSize(wSpec)
         mWidthMode = MeasureSpec.getMode(wSpec)
 
@@ -228,6 +234,7 @@ class ReuseView : ViewGroup { //ScrollingView {
         mHeightMode = MeasureSpec.getMode(hSpec)
     }
 
+    var mLayoutState = LayoutState()
     inner class LayoutState {
 
         /**
@@ -248,6 +255,7 @@ class ReuseView : ViewGroup { //ScrollingView {
 
     }
 
+    var mRecycler = Recycler()
     inner class Recycler {
         fun getViewForPosition(position: Int): View {
             return getViewForPosition(position, true)
@@ -268,7 +276,7 @@ class ReuseView : ViewGroup { //ScrollingView {
                 retainer = mAdapter?.createViewRetainer(this@ReuseView)
             }
 
-
+            mAdapter?.onBindViewRetainer(retainer, position)
 
             return retainer!!
         }
