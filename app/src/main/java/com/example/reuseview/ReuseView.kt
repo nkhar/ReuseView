@@ -22,6 +22,8 @@ class ReuseView : ViewGroup { //ScrollingView {
 
         const val FOREVER_NS = Long.MAX_VALUE
 
+        const val VERBOSE_TRACING = false
+
     }
 
     private var mAdapter: Adapter<*>? = null
@@ -77,6 +79,7 @@ class ReuseView : ViewGroup { //ScrollingView {
 
     }
 
+    private var measuredOnceAlready = false
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
 
         if ((mAdapter?.getItemCount() ?: 0) == 0) {
@@ -96,9 +99,18 @@ class ReuseView : ViewGroup { //ScrollingView {
 //            totalChildHeight += it.measuredHeight + GAP_BETWEEN_CHILDREN
 //        }
 
-        for (i in 0 until (mAdapter?.getItemCount() ?: 0)) {
-            layoutChunk(mRecycler, mLayoutState, i)
+//        for (i in 0 until (mAdapter?.getItemCount() ?: 0)) {
+//            layoutChunk(mRecycler, mLayoutState, i)
+//        }
+
+        if (measuredOnceAlready) {
+            mLayoutState.mOffset = 109
+            mLayoutState.mAvailable = 654
+            fill(mRecycler, mLayoutState)
+        } else {
+            measuredOnceAlready = true
         }
+
 
         setMeasuredDimension(widthMeasureSpec, 400)
 
@@ -195,12 +207,42 @@ class ReuseView : ViewGroup { //ScrollingView {
 //    }
 
 
-    fun fill(recycler: ReuseView.Recycler, layoutState: ReuseView.LayoutState, position: Int) {
+    private val mLayoutChunkResult = LLM.LayoutChunkResult()
+    fun fill(recycler: ReuseView.Recycler, layoutState: ReuseView.LayoutState): Int {
+        val start = layoutState.mAvailable
 
+        var remainingSpace = layoutState.mAvailable
+
+        val layoutChunkResult = mLayoutChunkResult
+
+        while (remainingSpace > 0) {
+            Log.d(TAG, "fill: remainingSpace = $remainingSpace")
+            layoutChunkResult.resetInternal()
+            if (VERBOSE_TRACING) {
+                Trace.beginSection("LLM layoutChunk")
+            }
+
+            layoutChunk(recycler, layoutState, layoutChunkResult)
+
+            if (VERBOSE_TRACING) {
+                Trace.endSection()
+            }
+
+            if (layoutChunkResult.mFinished) {
+                break
+            }
+            layoutState.mOffset += layoutChunkResult.mConsumed
+            layoutState.mAvailable -= layoutChunkResult.mConsumed
+            // we keep a separate remaining space because mAvailable is important for recycling
+            remainingSpace -= layoutChunkResult.mConsumed
+
+        }
+
+        return start - layoutState.mAvailable
     }
 
-    fun layoutChunk(recycler: ReuseView.Recycler, layoutState: ReuseView.LayoutState, position: Int) {
-        val view: View = layoutState.next(recycler, position)
+    fun layoutChunk(recycler: ReuseView.Recycler, layoutState: ReuseView.LayoutState, result: LLM.LayoutChunkResult) {
+        val view: View = layoutState.next(recycler)
 
         addView(view)
 
@@ -208,7 +250,7 @@ class ReuseView : ViewGroup { //ScrollingView {
 //        view.measure(mWidth, mHeight)
         view.measure(mWidthSpec, mHeightSpec)
 
-        layoutState.mOffset += view.measuredHeight
+        result.mConsumed = view.measuredHeight
 
         var left: Int
         var top: Int
@@ -251,8 +293,14 @@ class ReuseView : ViewGroup { //ScrollingView {
          */
         var mAvailable: Int = 0
 
-        fun next(recycler: ReuseView.Recycler, position: Int): View {
-            val view = recycler.getViewForPosition(position)
+        /**
+         * Current position on the adapter to get the next item.
+         */
+        var mCurrentPosition: Int = 0
+
+        fun next(recycler: ReuseView.Recycler): View {
+            val view = recycler.getViewForPosition(mCurrentPosition)
+            mCurrentPosition += 1
 
             return view
         }
@@ -323,5 +371,22 @@ class ReuseView : ViewGroup { //ScrollingView {
 
     }
 
+    object LLM {
+        class LayoutChunkResult {
+
+            var mConsumed = 0
+            var mFinished = false
+            var mIgnoreConsumed = false
+            var mFocusable = false
+            fun resetInternal() {
+                mConsumed = 0
+                mFinished = false
+                mIgnoreConsumed = false
+                mFocusable = false
+            }
+
+        }
+
+    }
 
 }
