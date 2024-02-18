@@ -51,6 +51,7 @@ class ReuseView : ViewGroup { //ScrollingView {
 
     fun setLayoutManager() {
         mLayout = LinearPlacementManager()
+        mLayout!!.setRecyclerView(this)
     }
 
 
@@ -105,10 +106,27 @@ class ReuseView : ViewGroup { //ScrollingView {
 
         if (mLayout!!.isAutoMeasureEnabled()) {
 
+            /**
+             * This specific call should be considered deprecated and replaced with
+             * {@link #defaultOnMeasure(int, int)}. It can't actually be replaced as it could
+             * break existing third party code but all documentation directs developers to not
+             * override {@link LayoutManager#onMeasure(int, int)} when
+             * {@link PlacementManager#isAutoMeasureEnabled()} returns true.
+             */
+            mLayout!!.onMeasure(mRecycler, mLayoutState, widthMeasureSpec, heightMeasureSpec)
+
+            val measureSpecModeIsExactly = widthMode == MeasureSpec.EXACTLY && heightMode == MeasureSpec.EXACTLY
+            if (measureSpecModeIsExactly || mAdapter == null) {
+                Log.d(TAG, "onMeasure: Return because mode is EXACTLY for both")
+                return
+            }
+
+
+
         }
 
 
-        setMeasuredDimension(widthMeasureSpec, heightMeasureSpec)
+//        setMeasuredDimension(widthMeasureSpec, heightMeasureSpec)
 
 //        layoutChunk(mRecycler, mLayoutState, 0)
 
@@ -418,9 +436,23 @@ class ReuseView : ViewGroup { //ScrollingView {
 
         var mAutoMeasure = false
 
+        var mRecyclerView: ReuseView? = null
+
         open fun isAutoMeasureEnabled(): Boolean {
             return mAutoMeasure
         }
+
+        fun setRecyclerView(reuseView: ReuseView) {
+            mRecyclerView = reuseView
+        }
+
+        open fun onMeasure(
+            recycler: Recycler, state: LayoutState, widthSpec: Int,
+            heightSpec: Int,
+        ) {
+            mRecyclerView!!.defaultOnMeasure(widthSpec, heightSpec)
+        }
+
         companion object {
             fun chooseSize(spec: Int, desired: Int, min: Int): Int {
                 val mode = MeasureSpec.getMode(spec)
