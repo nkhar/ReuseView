@@ -8,7 +8,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
 import android.view.ViewGroup
-import androidx.core.view.children
+import androidx.core.view.ViewCompat
 import kotlin.math.max
 import kotlin.math.min
 
@@ -37,6 +37,8 @@ class ReuseView : ViewGroup { //ScrollingView {
     private var mWidthSpec = -1
     private var mHeightSpec = -1
 
+    private var mLayout: PlacementManager? = null
+
 
     constructor(context: Context) : this(context, null)
 
@@ -45,6 +47,10 @@ class ReuseView : ViewGroup { //ScrollingView {
 
         mTouchSlop = vc.scaledTouchSlop
         Log.d(TAG, "touch slop: $mTouchSlop")
+    }
+
+    fun setLayoutManager() {
+        mLayout = LinearPlacementManager()
     }
 
 
@@ -82,6 +88,48 @@ class ReuseView : ViewGroup { //ScrollingView {
     private var measuredOnceAlready = false
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
 
+        val widthMode = MeasureSpec.getMode(widthMeasureSpec)
+        val heightMode = MeasureSpec.getMode(heightMeasureSpec)
+
+        val widthSize = MeasureSpec.getSize(widthMeasureSpec)
+        val heightSize = MeasureSpec.getSize(heightMeasureSpec)
+
+        Log.d(TAG, "onMeasure: widthMode: $widthMode, widthSize: $widthSize")
+        Log.d(TAG, "onMeasure: heightMode: $heightMode, heightSize: $heightSize")
+
+        if (mLayout == null) {
+            defaultOnMeasure(widthMeasureSpec, heightMeasureSpec)
+            return
+        }
+
+
+        if (mLayout!!.isAutoMeasureEnabled()) {
+
+        }
+
+
+        setMeasuredDimension(widthMeasureSpec, heightMeasureSpec)
+
+//        layoutChunk(mRecycler, mLayoutState, 0)
+
+    }
+
+    fun defaultOnMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        val tempWidth = PlacementManager.chooseSize(
+            widthMeasureSpec,
+            paddingLeft + paddingRight,
+            ViewCompat.getMinimumWidth(this)
+        )
+        val tempHeight = PlacementManager.chooseSize(
+            heightMeasureSpec,
+            paddingTop + paddingBottom,
+            ViewCompat.getMinimumHeight(this)
+        )
+        setMeasuredDimension(tempWidth, tempHeight)
+    }
+
+    private fun previousOnMeasureCode(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+
         if ((mAdapter?.getItemCount() ?: 0) == 0) {
             setMeasuredDimension(widthMeasureSpec, heightMeasureSpec)
             return
@@ -110,12 +158,7 @@ class ReuseView : ViewGroup { //ScrollingView {
         } else {
             measuredOnceAlready = true
         }
-
-
         setMeasuredDimension(widthMeasureSpec, 400)
-
-//        layoutChunk(mRecycler, mLayoutState, 0)
-
     }
 
     override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
@@ -320,7 +363,7 @@ class ReuseView : ViewGroup { //ScrollingView {
         fun tryGetViewRetainerForPositionByDeadline(
             position: Int,
             dryRun: Boolean,
-            deadlineNs: Long
+            deadlineNs: Long,
         ): ViewRetainer {
             var retainer: ViewRetainer? = null
 
@@ -369,6 +412,33 @@ class ReuseView : ViewGroup { //ScrollingView {
             this.itemView = itemView
         }
 
+    }
+
+    abstract class PlacementManager {
+
+        var mAutoMeasure = false
+
+        open fun isAutoMeasureEnabled(): Boolean {
+            return mAutoMeasure
+        }
+        companion object {
+            fun chooseSize(spec: Int, desired: Int, min: Int): Int {
+                val mode = MeasureSpec.getMode(spec)
+                val size = MeasureSpec.getSize(spec)
+                return when (mode) {
+                    MeasureSpec.EXACTLY -> size
+                    MeasureSpec.AT_MOST -> min(size, max(desired, min))
+                    MeasureSpec.UNSPECIFIED -> max(desired, min)
+                    else -> max(desired, min)
+                }
+            }
+        }
+    }
+
+    class LinearPlacementManager: PlacementManager() {
+        override fun isAutoMeasureEnabled(): Boolean {
+            return true
+        }
     }
 
     object LLM {

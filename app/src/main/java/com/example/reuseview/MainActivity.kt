@@ -60,6 +60,7 @@ class MainActivity : AppCompatActivity() {
         }
 
 
+        binding.rvMovies.setLayoutManager()
         binding.rvMovies.setAdapter(moviesAdapter)
     }
 
