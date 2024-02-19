@@ -9,7 +9,7 @@
     <com.example.reuseview.ReuseView
         android:id="@+id/rvMovies"
         android:layout_width="300dp"
-        android:layout_height="500dp"
+        android:layout_height="wrap_content"
         android:layout_marginStart="20dp"
         android:layout_marginTop="20dp"
         android:layout_marginEnd="20dp"

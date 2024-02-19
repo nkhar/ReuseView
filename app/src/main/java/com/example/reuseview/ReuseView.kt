@@ -457,9 +457,18 @@ class ReuseView : ViewGroup { //ScrollingView {
             fun chooseSize(spec: Int, desired: Int, min: Int): Int {
                 val mode = MeasureSpec.getMode(spec)
                 val size = MeasureSpec.getSize(spec)
+                Log.d(TAG, "chooseSize: mode: $mode size: $size")
                 return when (mode) {
                     MeasureSpec.EXACTLY -> size
-                    MeasureSpec.AT_MOST -> min(size, max(desired, min))
+                    MeasureSpec.AT_MOST -> {
+                        // height set to wrap_content should result this mode, size will be 1984 or
+                        // 2150 maybe something to do with status/navigation bars. We have not
+                        // assigned any padding or minHeight to ReuseView in the activity_main.xml
+                        // therefore max(desired, min) is 0 and min of (size, 0) will be 0. ReuseView
+                        // height will be 0, thus it will not be shown.
+                        Log.d(TAG, "chooseSize: AT_MOST for height desired: $desired, min: $min, max: ${max(desired, min)}")
+                        min(size, max(desired, min))
+                    }
                     MeasureSpec.UNSPECIFIED -> max(desired, min)
                     else -> max(desired, min)
                 }
