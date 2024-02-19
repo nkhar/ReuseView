@@ -86,7 +86,17 @@ class ReuseView : ViewGroup { //ScrollingView {
 
     }
 
+
+
     private var measuredOnceAlready = false
+
+    var mInterceptRequestLayoutDepth: Int = 0
+    var mLayoutWasDeferred: Boolean = false
+
+    var mLayoutSuppressed: Boolean = false
+
+    var mLayoutOrScrollCounter: Int = 0
+
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
 
         val widthMode = MeasureSpec.getMode(widthMeasureSpec)
@@ -121,6 +131,10 @@ class ReuseView : ViewGroup { //ScrollingView {
                 return
             }
 
+            if (mLayoutState.mLayoutStep == LayoutState.STEP_START) {
+                dispatchLayoutStep1()
+            }
+
 
 
         }
@@ -145,6 +159,49 @@ class ReuseView : ViewGroup { //ScrollingView {
         )
         setMeasuredDimension(tempWidth, tempHeight)
     }
+
+    class ViewInformationStore {
+        fun clear() {
+
+        }
+    }
+
+    val mViewInfoStore: ViewInformationStore = ViewInformationStore()
+    private fun dispatchLayoutStep1() {
+        mLayoutState.assertLayoutStep(LayoutState.STEP_START)
+        fillRemainingScrollValues(mLayoutState)
+        mLayoutState.mIsMeasuring = false
+        startInterceptRequestLayout()
+        mViewInfoStore.clear()
+        onEnterLayoutOrScroll()
+        processAdapterUpdatesAndSetAnimationFlags()
+        saveFocusInfo()
+
+
+    }
+
+    fun onEnterLayoutOrScroll() {
+        mLayoutOrScrollCounter++
+    }
+    private fun startInterceptRequestLayout() {
+        mInterceptRequestLayoutDepth++
+        if (mInterceptRequestLayoutDepth == 1 && !mLayoutSuppressed) {
+            mLayoutWasDeferred = false
+        }
+    }
+
+    private fun saveFocusInfo() {
+        // TODO have no idea what this does
+    }
+
+    private fun fillRemainingScrollValues(state: LayoutState) {
+
+    }
+
+    private fun processAdapterUpdatesAndSetAnimationFlags() {
+        // TODO have to understand and implement animation stuff
+    }
+
 
     private fun previousOnMeasureCode(widthMeasureSpec: Int, heightMeasureSpec: Int) {
 
@@ -342,7 +399,23 @@ class ReuseView : ViewGroup { //ScrollingView {
     }
 
     var mLayoutState = LayoutState()
-    inner class LayoutState {
+    class LayoutState {
+
+        companion object {
+            const val STEP_START = 1
+        }
+
+        fun assertLayoutStep(accepted: Int) {
+            check(accepted and mLayoutStep != 0) {
+                ("Layout state should be one of "
+                        + Integer.toBinaryString(accepted) + " but it is "
+                        + Integer.toBinaryString(mLayoutStep))
+            }
+        }
+
+        var mLayoutStep = STEP_START
+
+        var mIsMeasuring = false
 
         /**
          *  Pixel offset where layout should start
