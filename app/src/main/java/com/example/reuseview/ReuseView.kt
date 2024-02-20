@@ -97,6 +97,14 @@ class ReuseView : ViewGroup { //ScrollingView {
 
     var mLayoutOrScrollCounter: Int = 0
 
+    // For use in item animations
+    var mItemsAddedOrRemoved: Boolean = false
+    var mItemsChanged: Boolean = false
+
+    // simple array to keep min and max child position during a layout calculation
+    // preserved not to create a new one in each layout pass
+    private val mMinMaxLayoutPositions = IntArray(2)
+
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
 
         val widthMode = MeasureSpec.getMode(widthMeasureSpec)
@@ -176,8 +184,32 @@ class ReuseView : ViewGroup { //ScrollingView {
         onEnterLayoutOrScroll()
         processAdapterUpdatesAndSetAnimationFlags()
         saveFocusInfo()
+        mLayoutState.mTrackOldChangeHolders = mLayoutState.mRunSimpleAnimations && mItemsChanged
+        mItemsAddedOrRemoved = false.also { mItemsChanged = it }
+        mLayoutState.mInPreLayout = mLayoutState.mRunPredictiveAnimations
+        mLayoutState.mItemCount = mAdapter!!.getItemCount()
+        findMinMaxChildLayoutPositions(mMinMaxLayoutPositions)
+
+        if (mLayoutState.mRunSimpleAnimations) {
+            // Step 0: Find out where all non-removed items are, pre-layout
+        }
+        if (mLayoutState.mRunPredictiveAnimations) {
+            // Step 1: run prelayout: This will use the old positions of items. The layout manager
+            // is expected to layout everything, even removed items (though not to add removed
+            // items back to the container). This gives the pre-layout position of APPEARING views
+            // which come into existence as part of the real layout.
+
+            // Save old positions so that LayoutManager can run its mapping logic.
+
+        } else {
+            clearOldPositions()
+        }
 
 
+    }
+
+    private fun findMinMaxChildLayoutPositions(into: IntArray) {
+        //TODO have to implement this
     }
 
     fun onEnterLayoutOrScroll() {
@@ -200,6 +232,10 @@ class ReuseView : ViewGroup { //ScrollingView {
 
     private fun processAdapterUpdatesAndSetAnimationFlags() {
         // TODO have to understand and implement animation stuff
+    }
+
+    fun clearOldPositions() {
+        // TODO have to implement this
     }
 
 
@@ -413,9 +449,35 @@ class ReuseView : ViewGroup { //ScrollingView {
             }
         }
 
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        // Fields below must be updated or cleared before they are used (generally before a pass)
+        ////////////////////////////////////////////////////////////////////////////////////////////
+
         var mLayoutStep = STEP_START
 
+        /**
+         * Number of items adapter has.
+         */
+        var mItemCount = 0
+
+        /**
+         * True if the associated [ReuseView] is in the pre-layout step where it is having
+         * its [PlacementManager] layout items where they will be at the beginning of a set of
+         * predictive item animations.
+         */
+        var mInPreLayout = false
+
+        var mTrackOldChangeHolders: Boolean = false
+
         var mIsMeasuring = false
+
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        // Fields below are always reset outside of the pass (or passes) that use them
+        ////////////////////////////////////////////////////////////////////////////////////////////
+
+        var mRunSimpleAnimations: Boolean = false
+
+        var mRunPredictiveAnimations: Boolean = false
 
         /**
          *  Pixel offset where layout should start
